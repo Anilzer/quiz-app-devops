@@ -1,5 +1,5 @@
 import "./style.css";
-import { Questions } from "./questions_scm";
+import { Questions } from "./questions_cicd";
 
 const TIMEOUT = 4000;
 

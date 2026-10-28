@@ -38,6 +38,7 @@ jobs:
           name: quiz-app-dist
           path: dist/
           if-no-files-found: error
+
   sonar-analysis:
     name: Analyse SonarQube
     needs: build-and-test
@@ -47,8 +48,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Analyse SonarQube
-        uses: SonarSource/sonarqube-scan-action@v6
+        shell: pwsh
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: http://127.0.0.1:9000
+        run: |
+          $scanner = "C:\tools\sonar-scanner-7.2.0.5079-windows-x64\bin\sonar-scanner.bat"
+
+          if (-not (Test-Path $scanner)) {
+              throw "SonarScanner introuvable : $scanner"
+          }
+
+          & $scanner "-Dsonar.host.url=http://127.0.0.1:9000"
+
+          if ($LASTEXITCODE -ne 0) {
+              throw "Analyse SonarQube échouée : code $LASTEXITCODE"
+          }

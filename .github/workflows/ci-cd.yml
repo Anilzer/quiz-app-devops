@@ -1,0 +1,40 @@
+
+name: Quiz App - CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build et tests JavaScript
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Executer les tests
+        run: npm test
+
+      - name: Construire l'application
+        run: npm run build
+
+      - name: Archiver le resultat
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiz-app-dist
+          path: dist/
+          if-no-files-found: error

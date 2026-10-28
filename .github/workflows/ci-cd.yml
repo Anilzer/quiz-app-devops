@@ -38,3 +38,17 @@ jobs:
           name: quiz-app-dist
           path: dist/
           if-no-files-found: error
+    sonar-analysis:
+        name: Analyse SonarQube
+        needs: build-and-test
+        runs-on: [self-hosted, Windows, X64]
+
+        steps:
+        - name: Checkout
+            uses: actions/checkout@v4
+
+        - name: Analyse SonarQube
+            uses: SonarSource/sonarqube-scan-action@v6
+            env:
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            SONAR_HOST_URL: http://127.0.0.1:9000

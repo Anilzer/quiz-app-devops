@@ -69,3 +69,76 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
               throw "Analyse SonarQube échouée : code $LASTEXITCODE"
           }
+  
+  docker-nexus:
+    name: Docker Build - Trivy - Nexus
+    needs: sonar-analysis
+    if: github.event_name != 'pull_request'
+    runs-on: [self-hosted, Windows, X64]
+
+    steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      - name: Construire l'image Docker
+        shell: powershell
+        run: |
+          $image = "localhost:5001/quiz-app:${{ github.run_number }}"
+          docker build -t $image .
+          if ($LASTEXITCODE -ne 0) {
+            throw "Echec du build Docker"
+          }
+
+      - name: Scanner l'image avec Trivy
+        shell: powershell
+        run: |
+          $image = "localhost:5001/quiz-app:${{ github.run_number }}"
+
+          docker run --rm `
+            -v /var/run/docker.sock:/var/run/docker.sock `
+            aquasec/trivy:0.68.2 image `
+            --image-src docker `
+            --severity HIGH,CRITICAL `
+            --exit-code 1 `
+            $image
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Trivy a detecte des vulnerabilites bloquantes ou a echoue"
+          }
+
+      - name: Connexion a Nexus
+        shell: powershell
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+        run: |
+          $env:NEXUS_PASSWORD | docker login localhost:5001 `
+            --username $env:NEXUS_USERNAME `
+            --password-stdin
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Echec de connexion Nexus"
+          }
+
+      - name: Publier l'image dans Nexus
+        shell: powershell
+        run: |
+          $image = "localhost:5001/quiz-app:${{ github.run_number }}"
+          $latest = "localhost:5001/quiz-app:latest"
+
+          docker push $image
+          if ($LASTEXITCODE -ne 0) {
+            throw "Echec du push de l'image versionnee"
+          }
+
+          docker tag $image $latest
+          docker push $latest
+          if ($LASTEXITCODE -ne 0) {
+            throw "Echec du push latest"
+          }
+
+      - name: Deconnexion Nexus
+        if: always()
+        shell: powershell
+        run: docker logout localhost:5001
+

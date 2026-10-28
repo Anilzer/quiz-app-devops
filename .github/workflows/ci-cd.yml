@@ -84,7 +84,7 @@ jobs:
         shell: powershell
         run: |
           $image = "localhost:5001/quiz-app:${{ github.run_number }}"
-          docker build -t $image .
+          docker build --pull -t $image .
           if ($LASTEXITCODE -ne 0) {
             throw "Echec du build Docker"
           }

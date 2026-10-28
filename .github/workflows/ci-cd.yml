@@ -107,6 +107,7 @@ jobs:
           }
 
       
+      
       - name: Connexion a Nexus
         shell: powershell
         env:
@@ -114,17 +115,17 @@ jobs:
           NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
         run: |
           $encoding = New-Object System.Text.UTF8Encoding($false)
-
           [Console]::InputEncoding = $encoding
           $OutputEncoding = $encoding
 
-          $env:NEXUS_PASSWORD | docker login 127.0.0.1:5001 `
+          $env:NEXUS_PASSWORD | docker login localhost:5001 `
             --username $env:NEXUS_USERNAME `
             --password-stdin
 
           if ($LASTEXITCODE -ne 0) {
             throw "Echec de connexion Nexus"
           }
+
 
 
       - name: Publier l'image dans Nexus
